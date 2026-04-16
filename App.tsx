@@ -66,10 +66,14 @@ const PhysicsShape: React.FC<{
 
           if (ratio > 1.2) {
             impactY.set(-intensity);
+            impactX.set(intensity * 0.5);
             animate(impactY, 0, { type: 'spring', stiffness: 300, damping: 12 });
+            animate(impactX, 0, { type: 'spring', stiffness: 300, damping: 12 });
           } else if (ratio < 0.8) {
             impactX.set(-intensity);
+            impactY.set(intensity * 0.5);
             animate(impactX, 0, { type: 'spring', stiffness: 300, damping: 12 });
+            animate(impactY, 0, { type: 'spring', stiffness: 300, damping: 12 });
           } else {
             const df = intensity * 0.7;
             impactX.set(-df);

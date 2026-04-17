@@ -299,9 +299,9 @@ export const App: React.FC = () => {
               const yPos = Math.random() * (height / 2);
               
               let body;
-              if (type === 'circle') body = Matter.Bodies.circle(xPos, yPos, size / 2, { restitution: 0.6, friction: 0.1, label: 'body' });
-              else if (type === 'square') body = Matter.Bodies.rectangle(xPos, yPos, size, size, { restitution: 0.4, friction: 0.2, label: 'body' });
-              else body = Matter.Bodies.polygon(xPos, yPos, 3, size / 2, { restitution: 0.3, friction: 0.3, label: 'body' });
+              if (type === 'circle') body = Matter.Bodies.circle(xPos, yPos, size / 2, { restitution: 0.8, friction: 0.1, label: 'body' });
+              else if (type === 'square') body = Matter.Bodies.rectangle(xPos, yPos, size, size, { restitution: 0.6, friction: 0.2, label: 'body' });
+              else body = Matter.Bodies.polygon(xPos, yPos, 3, size / 2, { restitution: 0.5, friction: 0.3, label: 'body' });
               
               Matter.World.add(engine.world, body);
               initialShapes.push({
@@ -349,9 +349,9 @@ export const App: React.FC = () => {
     const colors = ['#FF4D4D', '#4DFF4D', '#4D4DFF', '#FFFF4D', '#FF4DFF', '#4DFFFF'];
     
     let body;
-    if (type === 'circle') body = Matter.Bodies.circle(x, y, size / 2, { restitution: 0.6, friction: 0.1 });
-    else if (type === 'square') body = Matter.Bodies.rectangle(x, y, size, size, { restitution: 0.4, friction: 0.2 });
-    else body = Matter.Bodies.polygon(x, y, 3, size / 2, { restitution: 0.3, friction: 0.3 });
+    if (type === 'circle') body = Matter.Bodies.circle(x, y, size / 2, { restitution: 0.8, friction: 0.1 });
+    else if (type === 'square') body = Matter.Bodies.rectangle(x, y, size, size, { restitution: 0.6, friction: 0.2 });
+    else body = Matter.Bodies.polygon(x, y, 3, size / 2, { restitution: 0.5, friction: 0.3 });
     
     Matter.World.add(engineRef.current.world, body);
     setBodies(prev => [...prev, {

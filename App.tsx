@@ -59,9 +59,13 @@ const PhysicsShape: React.FC<{
         const impactSpeed = Matter.Vector.magnitude(relativeVel) * 60;
         
         // Trigger rebound based on relative impact force
-        if (impactSpeed > 200) {
+        if (impactSpeed > 50) {
           const normal = bodyA.id === body.id ? collision.normal : { x: -collision.normal.x, y: -collision.normal.y };
-          const intensity = Math.min(0.7, impactSpeed / 2200);
+          
+          // Boost and scale intensity for low-speed impacts
+          // Linearly interpolate between 0 and 0.7 based on impact speed
+          const lerpFactor = Math.min(1, impactSpeed / 2200);
+          const intensity = lerpFactor * 0.7;
           const ratio = Math.abs(normal.y) / (Math.abs(normal.x) + 0.1);
 
           if (ratio > 1.2) {
@@ -239,7 +243,7 @@ export const App: React.FC = () => {
     
     // Matter.js engine setup
     const engine = Matter.Engine.create();
-    engine.gravity.y = 1; 
+    engine.gravity.y = 2.5; 
     engineRef.current = engine;
 
     const render = Matter.Render.create({

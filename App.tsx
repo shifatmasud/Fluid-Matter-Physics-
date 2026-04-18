@@ -246,10 +246,12 @@ export const App: React.FC = () => {
       
       const { x, y } = accelerationIncludingGravity;
       if (x != null && y != null) {
-        // Use accelerationIncludingGravity to establish a constant gravity vector based on tilt
-        // Directly map tilt to gravity to allow top gravity when tilted upwards.
-        engineRef.current.gravity.x = -x * 0.15;
-        engineRef.current.gravity.y = y * 0.25;
+        // Use accelerationIncludingGravity to establish a constant gravity vector based on tilt.
+        // Scale gravity uniformly across both X and Y axes to ensure consistent "pull"
+        // in the direction of the tilt on all sides.
+        const scale = 0.25;
+        engineRef.current.gravity.x = -x * scale;
+        engineRef.current.gravity.y = y * scale;
         
         // Add reactive shake chaos on top if active movement occurs
         const { acceleration } = event;

@@ -241,26 +241,35 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     const handleMotion = (event: DeviceMotionEvent) => {
-      const { acceleration } = event;
-      if (!acceleration || !engineRef.current) return;
+      const { accelerationIncludingGravity } = event;
+      if (!accelerationIncludingGravity || !engineRef.current) return;
       
-      const { x, y } = acceleration;
+      const { x, y } = accelerationIncludingGravity;
       if (x != null && y != null) {
-        const mag = Math.sqrt(x * x + y * y);
+        // Use accelerationIncludingGravity to establish a constant gravity vector based on tilt
+        // Directly map tilt to gravity to allow top gravity when tilted upwards.
+        engineRef.current.gravity.x = -x * 0.15;
+        engineRef.current.gravity.y = y * 0.25;
         
-        // Shake = Gravity modification + Impulse injection for chaos
-        engineRef.current.gravity.x = x * 0.5;
-        engineRef.current.gravity.y = 2.5 + y * 0.5;
-        
-        if (mag > 5 && engineRef.current.world.bodies) {
-          engineRef.current.world.bodies.forEach(body => {
-            if (body.label === 'body' && Math.random() > 0.8) {
-              Matter.Body.applyForce(body, body.position, {
-                x: (Math.random() - 0.5) * 0.05 * mag,
-                y: (Math.random() - 0.5) * 0.05 * mag
+        // Add reactive shake chaos on top if active movement occurs
+        const { acceleration } = event;
+        if (acceleration) {
+          const { x: ax, y: ay } = acceleration;
+          if (ax != null && ay != null) {
+            const mag = Math.sqrt(ax * ax + ay * ay);
+            if (mag > 5 && engineRef.current.world.bodies) {
+              const shakeIntensity = Math.min(mag, 20);
+              engineRef.current.world.bodies.forEach(body => {
+                if (body.label === 'body' && Math.random() > 0.9) {
+                  const forceScale = 0.02 * shakeIntensity;
+                  Matter.Body.applyForce(body, body.position, {
+                    x: (Math.random() - 0.5) * forceScale,
+                    y: (Math.random() - 0.5) * forceScale
+                  });
+                }
               });
             }
-          });
+          }
         }
       }
     };
@@ -297,10 +306,10 @@ export const App: React.FC = () => {
 
     // Create walls with large dimensions to ensure they cover all screen sizes
     const walls = [
-      Matter.Bodies.rectangle(0, 0, 5000, thickness, { isStatic: true, label: 'wall', restitution: 0.9, friction: 0.05 }), // Top
-      Matter.Bodies.rectangle(0, 0, 5000, thickness, { isStatic: true, label: 'wall', restitution: 0.9, friction: 0.05 }), // Bottom
-      Matter.Bodies.rectangle(0, 0, thickness, 5000, { isStatic: true, label: 'wall', restitution: 0.9, friction: 0.05 }), // Left
-      Matter.Bodies.rectangle(0, 0, thickness, 5000, { isStatic: true, label: 'wall', restitution: 0.9, friction: 0.05 }), // Right
+      Matter.Bodies.rectangle(0, 0, 5000, thickness, { isStatic: true, label: 'wall', restitution: 1.0, friction: 0 }), // Top
+      Matter.Bodies.rectangle(0, 0, 5000, thickness, { isStatic: true, label: 'wall', restitution: 1.0, friction: 0 }), // Bottom
+      Matter.Bodies.rectangle(0, 0, thickness, 5000, { isStatic: true, label: 'wall', restitution: 1.0, friction: 0 }), // Left
+      Matter.Bodies.rectangle(0, 0, thickness, 5000, { isStatic: true, label: 'wall', restitution: 1.0, friction: 0 }), // Right
     ];
     Matter.World.add(engine.world, walls);
 
@@ -326,15 +335,14 @@ export const App: React.FC = () => {
           const colors = ['#FF4D4D', '#4DFF4D', '#4D4DFF', '#FFFF4D', '#FF4DFF', '#4DFFFF'];
           
           for (let i = 0; i < 15; i++) {
-              const type: ShapeType = ['circle', 'square', 'triangle'][Math.floor(Math.random() * 3)] as ShapeType;
+              const type: ShapeType = ['circle', 'square'][Math.floor(Math.random() * 2)] as ShapeType;
               const size = 40 + Math.random() * 40;
               const xPos = Math.random() * width;
               const yPos = Math.random() * (height / 2);
               
               let body;
-              if (type === 'circle') body = Matter.Bodies.circle(xPos, yPos, size / 2, { restitution: 0.9, friction: 0.05, label: 'body' });
-              else if (type === 'square') body = Matter.Bodies.rectangle(xPos, yPos, size, size, { restitution: 0.9, friction: 0.05, label: 'body' });
-              else body = Matter.Bodies.polygon(xPos, yPos, 3, size / 2, { restitution: 0.9, friction: 0.05, label: 'body' });
+              if (type === 'circle') body = Matter.Bodies.circle(xPos, yPos, size / 2, { restitution: 1.0, friction: 0, label: 'body' });
+              else body = Matter.Bodies.rectangle(xPos, yPos, size, size, { restitution: 1.0, friction: 0, label: 'body' });
               
               Matter.World.add(engine.world, body);
               initialShapes.push({
@@ -375,16 +383,15 @@ export const App: React.FC = () => {
 
   const addShape = () => {
     if (!engineRef.current) return;
-    const type: ShapeType = ['circle', 'square', 'triangle'][Math.floor(Math.random() * 3)] as ShapeType;
+    const type: ShapeType = ['circle', 'square'][Math.floor(Math.random() * 2)] as ShapeType;
     const size = 40 + Math.random() * 40;
     const x = Math.random() * window.innerWidth;
     const y = 50;
     const colors = ['#FF4D4D', '#4DFF4D', '#4D4DFF', '#FFFF4D', '#FF4DFF', '#4DFFFF'];
     
     let body;
-    if (type === 'circle') body = Matter.Bodies.circle(x, y, size / 2, { restitution: 0.9, friction: 0.05 });
-    else if (type === 'square') body = Matter.Bodies.rectangle(x, y, size, size, { restitution: 0.9, friction: 0.05 });
-    else body = Matter.Bodies.polygon(x, y, 3, size / 2, { restitution: 0.9, friction: 0.05 });
+    if (type === 'circle') body = Matter.Bodies.circle(x, y, size / 2, { restitution: 1.0, friction: 0 });
+    else body = Matter.Bodies.rectangle(x, y, size, size, { restitution: 1.0, friction: 0 });
     
     Matter.World.add(engineRef.current.world, body);
     setBodies(prev => [...prev, {

@@ -112,7 +112,7 @@ const PhysicsShape: React.FC<{
       const speed = Math.sqrt(vx * vx + vy * vy);
 
       // --- Continuous Motion Deformation (Stretch in direction of motion) ---
-      const stretchMax = 0.35;
+      const stretchMax = 0.15;
       const stretchAmount = Math.max(0, Math.min(stretchMax, speed / 2500));
 
       let finalScaleX = 1;
@@ -133,8 +133,12 @@ const PhysicsShape: React.FC<{
       }
 
       // Final Cumulative Scales
-      stretch.set(finalScaleX + impactX.get());
-      squash.set(finalScaleY + impactY.get());
+      // Clamp cumulative deformation to prevent extreme visuals, especially during rapid shakes
+      const totalStretch = Math.max(0.6, Math.min(1.4, finalScaleX + impactX.get()));
+      const totalSquash = Math.max(0.6, Math.min(1.4, finalScaleY + impactY.get()));
+
+      stretch.set(totalStretch);
+      squash.set(totalSquash);
     };
 
     Matter.Events.on(engine, 'collisionStart', handleCollision);
@@ -236,6 +240,35 @@ export const App: React.FC = () => {
   const [showStats, setShowStats] = useState(false);
 
   useEffect(() => {
+    const handleMotion = (event: DeviceMotionEvent) => {
+      const { acceleration } = event;
+      if (!acceleration || !engineRef.current) return;
+      
+      const { x, y } = acceleration;
+      if (x != null && y != null) {
+        const mag = Math.sqrt(x * x + y * y);
+        
+        // Shake = Gravity modification + Impulse injection for chaos
+        engineRef.current.gravity.x = x * 0.5;
+        engineRef.current.gravity.y = 2.5 + y * 0.5;
+        
+        if (mag > 5 && engineRef.current.world.bodies) {
+          engineRef.current.world.bodies.forEach(body => {
+            if (body.label === 'body' && Math.random() > 0.8) {
+              Matter.Body.applyForce(body, body.position, {
+                x: (Math.random() - 0.5) * 0.05 * mag,
+                y: (Math.random() - 0.5) * 0.05 * mag
+              });
+            }
+          });
+        }
+      }
+    };
+    window.addEventListener('devicemotion', handleMotion);
+    return () => window.removeEventListener('devicemotion', handleMotion);
+  }, []);
+
+  useEffect(() => {
     if (!sceneRef.current) return;
 
     const container = sceneRef.current;
@@ -264,10 +297,10 @@ export const App: React.FC = () => {
 
     // Create walls with large dimensions to ensure they cover all screen sizes
     const walls = [
-      Matter.Bodies.rectangle(0, 0, 5000, thickness, { isStatic: true, label: 'wall' }), // Top
-      Matter.Bodies.rectangle(0, 0, 5000, thickness, { isStatic: true, label: 'wall' }), // Bottom
-      Matter.Bodies.rectangle(0, 0, thickness, 5000, { isStatic: true, label: 'wall' }), // Left
-      Matter.Bodies.rectangle(0, 0, thickness, 5000, { isStatic: true, label: 'wall' }), // Right
+      Matter.Bodies.rectangle(0, 0, 5000, thickness, { isStatic: true, label: 'wall', restitution: 0.9, friction: 0.05 }), // Top
+      Matter.Bodies.rectangle(0, 0, 5000, thickness, { isStatic: true, label: 'wall', restitution: 0.9, friction: 0.05 }), // Bottom
+      Matter.Bodies.rectangle(0, 0, thickness, 5000, { isStatic: true, label: 'wall', restitution: 0.9, friction: 0.05 }), // Left
+      Matter.Bodies.rectangle(0, 0, thickness, 5000, { isStatic: true, label: 'wall', restitution: 0.9, friction: 0.05 }), // Right
     ];
     Matter.World.add(engine.world, walls);
 
@@ -299,9 +332,9 @@ export const App: React.FC = () => {
               const yPos = Math.random() * (height / 2);
               
               let body;
-              if (type === 'circle') body = Matter.Bodies.circle(xPos, yPos, size / 2, { restitution: 0.8, friction: 0.1, label: 'body' });
-              else if (type === 'square') body = Matter.Bodies.rectangle(xPos, yPos, size, size, { restitution: 0.6, friction: 0.2, label: 'body' });
-              else body = Matter.Bodies.polygon(xPos, yPos, 3, size / 2, { restitution: 0.5, friction: 0.3, label: 'body' });
+              if (type === 'circle') body = Matter.Bodies.circle(xPos, yPos, size / 2, { restitution: 0.9, friction: 0.05, label: 'body' });
+              else if (type === 'square') body = Matter.Bodies.rectangle(xPos, yPos, size, size, { restitution: 0.9, friction: 0.05, label: 'body' });
+              else body = Matter.Bodies.polygon(xPos, yPos, 3, size / 2, { restitution: 0.9, friction: 0.05, label: 'body' });
               
               Matter.World.add(engine.world, body);
               initialShapes.push({
@@ -349,9 +382,9 @@ export const App: React.FC = () => {
     const colors = ['#FF4D4D', '#4DFF4D', '#4D4DFF', '#FFFF4D', '#FF4DFF', '#4DFFFF'];
     
     let body;
-    if (type === 'circle') body = Matter.Bodies.circle(x, y, size / 2, { restitution: 0.8, friction: 0.1 });
-    else if (type === 'square') body = Matter.Bodies.rectangle(x, y, size, size, { restitution: 0.6, friction: 0.2 });
-    else body = Matter.Bodies.polygon(x, y, 3, size / 2, { restitution: 0.5, friction: 0.3 });
+    if (type === 'circle') body = Matter.Bodies.circle(x, y, size / 2, { restitution: 0.9, friction: 0.05 });
+    else if (type === 'square') body = Matter.Bodies.rectangle(x, y, size, size, { restitution: 0.9, friction: 0.05 });
+    else body = Matter.Bodies.polygon(x, y, 3, size / 2, { restitution: 0.9, friction: 0.05 });
     
     Matter.World.add(engineRef.current.world, body);
     setBodies(prev => [...prev, {
@@ -366,7 +399,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full h-screen bg-[#0A0A0A] overflow-hidden select-none font-sans text-white">
+    <div className="relative w-full h-[100dvh] bg-[#0A0A0A] overflow-hidden select-none font-sans text-white">
       {/* Immersive Background */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,#1A1A1A_0%,#0A0A0A_100%)]" />

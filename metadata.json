@@ -1,6 +1,6 @@
 {
   "description": "A physics-driven fluid simulation using Matter.js and Framer Motion for organic deformations.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["motion"],
   "name": "Fluid Matter",
   "majorCapabilities": []
 }
